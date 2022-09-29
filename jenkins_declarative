@@ -1,0 +1,113 @@
+pipeline{
+    agent any
+    
+    tools {
+        
+        maven "maven3.8.6"
+        }
+        
+        stages {
+            
+            stage('1Getcode'){
+                
+                 steps{
+                     
+                sh "echo 'Cloning the application'"
+               git branch: 'feature', credentialsId: 'githubcredentials', url: 'https://github.com/Elhope02/BOA.app.git' 
+               
+            }   
+            }
+            
+            stage('2TestandBuild'){
+                
+                 steps{
+                     
+                sh "echo 'creating Artifacts'"
+               sh "mvn clean package" 
+               
+            }   
+         }
+         
+         stage('3codequality'){
+                
+                 steps{
+                sh "echo 'running codes quality'"
+               sh "mvn sonar:sonar" 
+               
+                 }
+         }
+         stage('4UploadArtifacts'){
+                
+                 steps{
+                sh "echo 'Uploading Artifacts to Artifactory'"
+               sh "mvn deploy"
+               
+                 }
+         }
+         
+        stage('5deploytouat'){
+                
+                 steps{
+                sh "echo 'deploy to UAT environment'"
+               deploy adapters: [tomcat8(credentialsId: 'DGA.tomcatcred', path: '', url: 'http://18.117.162.217:8080/')], contextPath: null, war: 'target/*war' 
+               
+                 }
+        }
+        stage('6approvalGate'){
+            
+    steps{
+        
+    sh "echo 'ready for review' "
+    timeout(time:5, unit:'DAYS') {
+        
+    input message: 'Application ready for deployment, Please review and approve'
+    
+    }
+    }
+        }
+        
+    stage('5deploytoprod'){
+                
+                 steps{
+                sh "echo 'deploy to production environment'"
+                deploy adapters: [tomcat8(credentialsId: 'DGA.tomcatcred', path: '', url: 'http://18.117.162.217:8080/')], contextPath: null, war: 'target/*war'
+                
+                 }
+                    }
+        }
+   /*     
+                     post{
+                         always{
+                             emailext body: '''Hello team, please review the build status.
+
+Thanks,
+
+Gradi Dossou
+Cell: +1 (502)-341-7711''', recipientProviders: [buildUser(), culprits(), developers()], subject: 'success', to: 'elhope02@gmail.com'
+                             
+                         }
+                     }
+}
+                           success{
+                               
+                             emailext body: '''Hello guys, awesome job, the build has been successful
+
+Thanks,
+
+Gradi Dossou
+Cell: +1 (502)-341-7711''', recipientProviders: [buildUser(), culprits(), developers()], subject: 'success', to: 'elhope02@gmail.com'
+
+                         }
+        
+                          failure{
+                              
+                         emailext body: '''Hello guys, the build has failled, please let's work on it.
+
+Thanks,
+
+Gradi Dossou
+Cell: +1 (502)-341-7711''', recipientProviders: [buildUser(), culprits(), developers()], subject: 'success', to: 'elhope02@gmail.com'
+
+*/
+                     }
+    
